@@ -1,0 +1,68 @@
+
+plugins {
+    id 'com.android.application'
+}
+
+/**
+ * @author Mrack
+ * @date 2022/2/14
+ */
+ext {
+    rustAbi = ["armeabi-v7a","arm64-v8a"]
+}
+
+android {
+
+    compileSdk 31
+    defaultConfig {
+        applicationId "cn.mrack.rs"
+        minSdk 21
+        targetSdk 31
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    buildFeatures {
+        viewBinding true
+    }
+}
+
+tasks.whenTaskAdded { task ->
+    if ((task.name == 'javaPreCompileDebug' || task.name == 'javaPreCompileRelease')) {
+        task.dependsOn 'buildRust'
+    }
+}
+
+task buildRust {
+    doLast {
+        for (abi in rustAbi) {
+            if (System.properties['os.name'].toLowerCase().contains('win')) {
+                exec {
+                    workingDir new File(project.projectDir, "rs")
+                    commandLine 'cmd', "/c", "build_rs.bat", abi, "--release"
+                }
+            } else {
+                exec {
+                    workingDir new File(project.projectDir, "rs")
+                    commandLine "sh", "build_rs.sh", abi, "--release"
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.4.1'
+    implementation 'com.google.android.material:material:1.5.0'
+}
